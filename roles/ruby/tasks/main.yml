@@ -1,0 +1,14 @@
+---
+- name: "Install ruby"
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: "latest"
+    update_cache: true
+  with_items:
+    - "nodejs"
+    - "centos-release-scl"
+    - "rh-ruby25"
+    - "rh-ruby25-scldevel"
+    - "rh-ruby25-rubygem-bundler"
+    - "rh-ruby25-ruby-devel"
+

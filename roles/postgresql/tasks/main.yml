@@ -1,0 +1,71 @@
+---
+- name: "Install Postgresql"
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: "present"
+    update_cache: true
+  with_items:
+    - "postgresql"
+    - "postgresql-server"	
+    - "postgresql-contrib"
+    - "python-psycopg2"	
+    - "postgresql-devel" 
+
+- name: "Find pg_hba.conf"
+  ansible.builtin.stat:
+    path: "/var/lib/pgsql/data/pg_hba.conf"
+  register: pg_hba
+
+- name: "Initialize PostgreSQL"
+  ansible.builtin.shell: "/usr/bin/postgresql-setup initdb"
+  when: not pg_hba.stat.exists
+
+- name: "Start PostgreSQL"
+  ansible.builtin.service:
+    name: "postgresql"
+    state: "started"
+    enabled: true
+
+- name: "Create database"
+  community.postgresql.postgresql_db:
+    state: present
+    name: "{{ DB_NAME }}"
+  become: true
+  become_user: postgres
+
+- name: "Create db user"
+  community.postgresql.postgresql_user:
+    state: present
+    name: "{{ DB_USER }}"
+    password: "{{ DB_PASSWORD }}"
+  become: true
+  become_user: postgres
+
+- name: "Grant access"
+  community.general.postgresql_privs:
+    type: database
+    database: "{{ DB_NAME }}"
+    roles: "{{ DB_USER }}"
+    grant_option: no
+    privs: all
+  become: yes
+  become_user: postgres
+
+- name: "Allow connection"
+  vars:
+     ansible_python_interpreter: /usr/bin/python3.6
+  community.general.postgresql_pg_hba:     
+    dest: "~/data/pg_hba.conf"
+    address: 127.0.0.1/32
+    contype: host
+    databases: all
+    method: md5
+    users: "{{ DB_USER }}"
+    create: true
+  become: yes
+  become_user: postgres
+
+- name: "restart postgres"
+  ansible.builtin.service: 
+    name: "postgresql" 
+    state: "restarted"

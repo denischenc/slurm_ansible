@@ -1,0 +1,22 @@
+---
+- name: "Fix repository error"
+  ansible.builtin.copy:
+      src: files/epel.repo
+      dest: /etc/yum.repos.d/epel.repo
+      owner: root
+      group: root
+      mode: '0644'
+      follow: yes
+    
+- name: "Install centos packages"
+  ansible.builtin.yum:
+      name: "{{ item }}"
+      state: "present"
+      update_cache: true
+  with_items:
+      - "ca-certificates"
+      - "epel-release"
+      - "@development tools"
+      - "libxml2-devel"
+      - "python36"
+      - "python-pip"

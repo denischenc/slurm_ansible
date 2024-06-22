@@ -1,0 +1,53 @@
+# Slurm Ansible
+
+---
+- hosts: "centos"
+  become: true
+  vars:
+    SECRET_KEY_BASE: secretkeybase
+    RAILS_ENV: production
+    RAILS_LOG_TO_STDOUT: 1
+    DB_HOST: 127.0.0.1
+    DB_PORT: 5432
+    DB_NAME: slurm
+    DB_USER: xpaste
+    DB_PASSWORD: password
+
+  roles:
+  - "centos-packages"
+  - "ruby"
+  - "postgresql"
+  - "app"
+  - "geerlingguy.nginx"
+  
+  tasks:
+  - name: "Copy nginx conf"
+    ansible.builtin.copy:
+      src: "/app/config/nginx.conf"
+      dest: "/etc/nginx/nginx.conf"
+      owner: "root"
+      group: "root"
+      mode: "0644"
+      remote_src: yes
+  
+  - name: "Copy robots.txt"
+    ansible.builtin.copy:  
+      src: "/app/public/robots.txt"
+      dest: "/app/app/assets/robots.txt"
+      owner: "root"
+      group: "root"
+      mode: "0644"
+      remote_src: yes
+    
+  - name: "Update nginx conf"
+    ansible.builtin.replace: 
+      path: "/etc/nginx/nginx.conf"
+      regexp: '/app/public'
+      replace: '/app/app/assets/'
+      validate: nginx -c %s -t
+  
+  - name: "Reload nginx"
+    ansible.builtin.service:
+      name: "nginx"
+      state: "reloaded"
+
